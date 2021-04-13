@@ -9,15 +9,15 @@
 
 class Simulator {
 private:
-	std::string readPath;
-	std::string writePath;
+	std::string readPath; // Reading a csv file (input variables)
+	std::string writePath; // Writing to a csv file (dynamics state log)
 
-	FileReader reader;
+	FileReader reader; // File reader
 
 public:
-	Simulator(const std::string& readPath, const std::string& writePath);
-	void euler(const std::unique_ptr<State>& state, float tStart, float tEnd, float h);
-	void rungeKutta(const std::unique_ptr<State>& state, float tStart, float tEnd, float h);
+	Simulator(const std::string& readPath, const std::string& writePath); // Contructor
+	void euler(const std::unique_ptr<State>& state, float tStart, float tEnd, float h); // Euler method
+	void rungeKutta(const std::unique_ptr<State>& state, float tStart, float tEnd, float h); // Runge Kutta method
 };
 
 #endif

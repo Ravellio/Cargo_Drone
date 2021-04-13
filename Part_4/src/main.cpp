@@ -4,11 +4,12 @@
 * Version: 0.1
 * License: N/A
 * Description: The program asks the user to choose what dynamical system has to be simulated.
-*              The user can choose between "Drone" or "Drone with Cargo". Next to that,
-*              the user can choose the integration method, either "Euler" or "Runge-Kutta".
+*              The user can choose between "Drone" or "Drone with Cargo" [Y/N]. Next to that,
+*              the user can choose the integration method, either "Euler" or "Runge-Kutta" [Euler/RungeKutta].
 *              Note that integration step "h" is chosen automatically depending on the integration method.
 *              The program is processing user key for drone movement. Key "w" correspons to up (enable trust),
 *              "s" - going down (disable trust), "a" - left and "d" right. No writing or reading to "csv" file is performed.
+* 			   In the program multithreading is used.
 */
 
 #include <thread>
@@ -19,61 +20,57 @@
 #include "inc/Simulator.hpp"
 #include "inc/Graphics.hpp"
 
-// Add a more elaborate description about input parameters
-// Check if the description matches the program requirements
-// Check if we need to rotate the cargo (change the angle accoding to the rope angle) - or it is done in the bonus question?
-// Increare the rope size
 // Mutex object not in scope -> fix this
-// C++
 
-std::mutex mtx;
-bool quit = false;
+std::mutex mtx; // Mutex object
+bool quit = false; // Flag for quiting the game
 
-std::unique_ptr<State> state;
-std::vector<float> u = { 0.0f, 0.0f };
+std::unique_ptr<State> state; // Dynamic state
+std::vector<float> u = { 0.0f, 0.0f }; // Input vector
 
+// Next state computation function : thread function
 void nextStateSimulation(Simulator sim, void (Simulator::* f) (const std::unique_ptr<State>&, const std::vector<float>&, float h), int sleepTimeMs, float h) {
-    while (!quit) {
-        (sim.*f)(state, u, h);
-        std::this_thread::sleep_for(std::chrono::milliseconds(sleepTimeMs));
+    while (!quit) { 
+        (sim.*f)(state, u, h); // Compute the next state using a function pointer
+        std::this_thread::sleep_for(std::chrono::milliseconds(sleepTimeMs)); // Sleep
     }
 }
 
 int main() {
-    Simulator sim;
+    Simulator sim; // Simulator object
 
-    std::string inp1, inp2;
-    do {
+    std::string inp1, inp2; // Allocating mememory for input arguments
+    do { // Drone with or without cargo
         std::cout << "Drone with cargo: Y/N" << "\n";
         std::cin >> inp1;
-    } while (!(inp1 == "Y" || inp1 == "N"));
+    } while (!(inp1 == "Y" || inp1 == "N")); // Only "Y" <yes> or "N" <no> inputs are possible
 
-    do {
+    do { // Choosing a simulator
         std::cout << "Simulator: Euler/RungeKutta" << "\n";
         std::cin >> inp2;
-    } while (!(inp2 == "Euler" || inp2 == "RungeKutta"));
+    } while (!(inp2 == "Euler" || inp2 == "RungeKutta")); // Only "Euler" or "RungeKutta" inputs are possible
 
     const int windowWidth = 1300;
     const int windowHeight = 700;
-    const char* droneBitmapPath = "/home/vlad/Documents/Projects/Drone.bmp";
-    const char* cargoBitmapPath = "/home/vlad/Documents/Projects/Cargo.bmp";
+    const char* droneBitmapPath = "/home/vlad/Documents/Projects/Drone.bmp"; // Path for drone image
+    const char* cargoBitmapPath = "/home/vlad/Documents/Projects/Cargo.bmp"; // Path for cargo image
 
-    std::unique_ptr<Graphics> g;
-    const float w = 0.7f;
-    const float downT = 0.0f;
-    float upT;
-    float h;
+    std::unique_ptr<Graphics> g; // Declaring a graphics object
+    const float w = 0.7f; // Max rotation angle 
+    const float downT = 0.0f; // Disabled thrust value
+    float upT; // Enabled trust
+    float h; // Time step
    
-    try {
-        if (inp1 == "N") {
+    try { // Exceptions possible 
+        if (inp1 == "N") { // Only drone, no cargo
             state = std::make_unique<DroneState>();
             g = std::make_unique<DroneGraphics>(windowWidth, windowHeight, droneBitmapPath);
-            upT = 2 * 3 * 9.81f;
+            upT = 2 * 3 * 9.81f; // Set the thrust value
         }
-        else {
+        else { // Drone with cargo
             state = std::make_unique<DroneCargoState>();
             g = std::make_unique<DroneCargoGraphics>(windowWidth, windowHeight, droneBitmapPath, cargoBitmapPath);
-            upT = 2 * (3 + 2) * 9.81f;
+            upT = 2 * (3 + 2) * 9.81f; // Set the thrust value
         }
     }
     catch (const char* e) {
@@ -81,9 +78,9 @@ int main() {
         return -1;
     }
 
-    void (Simulator:: * nextStateFunc) (const std::unique_ptr<State>&, const std::vector<float>&, float);
+    void (Simulator:: * nextStateFunc) (const std::unique_ptr<State>&, const std::vector<float>&, float); // Function pointer for computing the next state
    
-    if (inp2 == "Euler") {
+    if (inp2 == "Euler") { // Choosing the appropriate time step
         nextStateFunc = &Simulator::euler;
         if (inp1 == "N") {
             h = 0.01f;
@@ -102,43 +99,43 @@ int main() {
         }
     }
     
-    const int fps = 30; 
-    const int threadSleepTimeMs = 20;
+    const int fps = 30; // Frames per second
+    const int threadSleepTimeMs = 20; // Computational thread sleep time
     int timeout = SDL_GetTicks() + 1000 / fps;
 
-    std::thread th(nextStateSimulation, sim, nextStateFunc, threadSleepTimeMs, h);
+    std::thread th(nextStateSimulation, sim, nextStateFunc, threadSleepTimeMs, h); // Initializing the thread
     
-    SDL_Event e;
+    SDL_Event e; // Memory for storing the event
 
     while (!quit) {
-        g->draw(state);
+        g->draw(state); // Draw the state
   
-        while (!SDL_TICKS_PASSED(SDL_GetTicks(), timeout)) {
-            while (SDL_PollEvent(&e)) {
-                switch (e.type) {
-                case SDL_QUIT:
-                    quit = true;   
-                    th.join();
+        while (!SDL_TICKS_PASSED(SDL_GetTicks(), timeout)) { // Wait for the time elapse
+            while (SDL_PollEvent(&e)) { // Check for any events
+                switch (e.type) { // Check the event type
+                case SDL_QUIT: // If quit
+                    quit = true;
+					th.join();
                     break;
-                case SDL_KEYDOWN:
-                    switch (e.key.keysym.sym) {
-                    case SDLK_w:
-                        u[0] = upT;
-                        break;
-                    case SDLK_a:
-                        u[1] = w;
-                        break;
-                    case SDLK_d:
-                        u[1] = -w;
-                        break;
-                    case SDLK_s:
-                        u[0] = downT;
-                    default:
-                        break;
-                    }
+                case SDL_KEYDOWN: // If keypress
+                    switch (e.key.keysym.sym) { // Check what key was pressed
+                        case SDLK_w: // 'w'
+                            u[0] = upT; // Enable trust 
+                            break;
+                        case SDLK_a: // 'a'
+                            u[1] = w; // Go left
+                            break;
+                        case SDLK_d: // 'd'
+                            u[1] = -w; // Go right
+                            break;
+                        case SDLK_s: // 's'
+                            u[0] = downT; // Disable thrust
+                        default:
+                            break;
+                    }           
                 default:
                     break;
-                }
+                } 
             }
         }
         

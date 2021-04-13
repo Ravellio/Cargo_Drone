@@ -4,8 +4,8 @@
 * Version: 0.1
 * License: N/A
 * Description: The program asks the user to choose what dynamical system has to be simulated.
-*              The user can choose between "Drone" or "Drone with Cargo". Next to that,
-*              the user can choose the integration method, either "Euler" or "Runge-Kutta".
+*              The user can choose between "Drone" or "Drone with Cargo" [Y/N]. Next to that,
+*              the user can choose the integration method, either "Euler" or "Runge-Kutta" [Euler/RungeKutta].
 *              Note that integration step "h" is chosen automatically depending on the integration method.
 *              The program is processing user key for drone movement. Key "w" correspons to up (enable trust),
 *              "s" - going down (disable trust), "a" - left and "d" right. No writing or reading to "csv" file is performed.
@@ -14,53 +14,53 @@
 #include "inc/Simulator.hpp"
 #include "inc/Graphics.hpp"
 
-// Add a more elaborate description about input parameters
-// Check if we need to rotate the cargo (change the angle accoding to the rope angle) - or it is done in the bonus question?
-
 int main() {
-    Simulator sim;
+    Simulator sim; // Simulator object
 
-    std::string inp1, inp2;
-    do {
+    std::string inp1, inp2; // Allocating mememory for input arguments
+    do { // Drone with or without cargo
         std::cout << "Drone with cargo: Y/N" << "\n";
         std::cin >> inp1;
-    } while (!(inp1 == "Y" || inp1 == "N"));
+    } while (!(inp1 == "Y" || inp1 == "N")); // Only "Y" <yes> or "N" <no> inputs are possible
 
-    do {
+    do { // Choosing a simulator
         std::cout << "Simulator: Euler/RungeKutta" << "\n";
         std::cin >> inp2;
-    } while (!(inp2 == "Euler" || inp2 == "RungeKutta"));
+    } while (!(inp2 == "Euler" || inp2 == "RungeKutta")); // Only "Euler" or "RungeKutta" inputs are possible
 
     const int windowWidth = 1300;
     const int windowHeight = 700;
-	const char* droneBitmapPath = "/home/vlad/Documents/Projects/Drone.bmp";
-    const char* cargoBitmapPath = "/home/vlad/Documents/Projects/Cargo.bmp";
+	const char* droneBitmapPath = "/home/vlad/Documents/Projects/Drone.bmp"; // Path for drone image
+    const char* cargoBitmapPath = "/home/vlad/Documents/Projects/Cargo.bmp"; // Path for cargo image
 
-    std::unique_ptr<State> state;
-    std::unique_ptr<Graphics> g;
-    const float w = 0.7f;
-    const float downT = 0.0f;
-    float upT;
-    float h;
+    std::unique_ptr<State> state; // Declaring a state object
+    std::unique_ptr<Graphics> g; // Declaring a graphics object
+    const float w = 0.7f; // Max rotation angle 
+    const float downT = 0.0f; // Disabled thrust value
+    float upT; // Enabled trust
+    float h; // Time step
    
-    try {
-        if (inp1 == "N") {
+    try { // Exceptions possible 
+        if (inp1 == "N") { // Only drone, no cargo
             state = std::make_unique<DroneState>();
             g = std::make_unique<DroneGraphics>(windowWidth, windowHeight, droneBitmapPath);
-            upT = 2 * 3 * 9.81f;
+            upT = 2 * 3 * 9.81f; // Set the thrust value
         }
-        else {
+        else { // Drone with cargo
             state = std::make_unique<DroneCargoState>();
             g = std::make_unique<DroneCargoGraphics>(windowWidth, windowHeight, droneBitmapPath, cargoBitmapPath);
-            upT = 2 * (3 + 2) * 9.81f;
+            upT = 2 * (3 + 2) * 9.81f; // Set the thrust value
         }
     }
     catch (const char* e) {
         std::cout << "Could create graphics object: " << e << "\n";
         return -1;
     }
+	
+	void (Simulator:: * nextStateFunc) (const std::unique_ptr<State>& state, const std::vector<float>& u, float h); // Function pointer for computing the next state
    
-    if (inp2 == "Euler") {
+    if (inp2 == "Euler") { // Choosing the appropriate time step
+		nextStateFunc = &Simulator::euler;
         if (inp1 == "N") {
             h = 0.01f;
         }
@@ -69,6 +69,7 @@ int main() {
         }
     }
     else {
+		nextStateFunc = &Simulator::rungeKutta;
         if (inp1 == "N") {
             h = 0.02f;
         }
@@ -77,41 +78,36 @@ int main() {
         }
     }
     
-    const int fps = 30; 
+    const int fps = 30; // Frames per second
     int timeout = SDL_GetTicks() + 1000 / fps;
-    std::vector<float> u = { 0.0f, 0.0f };
+    std::vector<float> u = { 0.0f, 0.0f }; // Intialize input variables to zero
 
-    SDL_Event e;
+    SDL_Event e; // Memory for storing the event
     bool quit = false;
 
     while (!quit) {
-        g->draw(state);
-        if (inp2 == "Euler") {
-            sim.euler(state, u, h);
-        }
-        else {
-            sim.rungeKutta(state, u, h);
-        }
+        g->draw(state); // Draw the state
+        (sim.*nextStateFunc)(state, u, h); // Compute the next state
 
-        while (!SDL_TICKS_PASSED(SDL_GetTicks(), timeout)) {
-            while (SDL_PollEvent(&e)) {
-                switch (e.type) {
-                case SDL_QUIT:
+        while (!SDL_TICKS_PASSED(SDL_GetTicks(), timeout)) { // Wait for the time elapse
+            while (SDL_PollEvent(&e)) { // Check for any events
+                switch (e.type) { // Check the event type
+                case SDL_QUIT: // If quit
                     quit = true;
                     break;
-                case SDL_KEYDOWN:
-                    switch (e.key.keysym.sym) {
-                        case SDLK_w:
-                            u[0] = upT;
+                case SDL_KEYDOWN: // If keypress
+                    switch (e.key.keysym.sym) { // Check what key was pressed
+                        case SDLK_w: // 'w'
+                            u[0] = upT; // Enable trust 
                             break;
-                        case SDLK_a:
-                            u[1] = w;
+                        case SDLK_a: // 'a'
+                            u[1] = w; // Go left
                             break;
-                        case SDLK_d:
-                            u[1] = -w;
+                        case SDLK_d: // 'd'
+                            u[1] = -w; // Go right
                             break;
-                        case SDLK_s:
-                            u[0] = downT;
+                        case SDLK_s: // 's'
+                            u[0] = downT; // Disable thrust
                         default:
                             break;
                     }           

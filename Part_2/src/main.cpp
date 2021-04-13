@@ -4,8 +4,8 @@
 * Version: 0.1
 * License: N/A
 * Description: The program ask the user to choose what dynamical system has to be simulated.
-*              The user can choose between "Drone" or "Drone with Cargo". Next to that,
-*              the user can choose the integration method, either "Euler" or "Runge-Kutta".
+*              The user can choose between "Drone" or "Drone with Cargo" [Y/N]. Next to that,
+*              the user can choose the integration method, either "Euler" or "Runge-Kutta" [Euler/RungeKutta].
 *              Note that integration step "h" is chosen automatically depending on the integration method.
 *              The program reads a "csv" file (via the provided "readPath") which indicates the input vector
                to the dynamical system. This input vector consists of the thrust "T [N]" and the rate of change 
@@ -17,10 +17,10 @@
 #include "inc/Graphics.hpp"
 
 int main() {
-    const std::string readPath = "/home/vlad/Documents/Projects/inputs.csv";
+    const std::string readPath = "/home/vlad/Documents/Projects/inputs.csv"; // Reading the inputs from the csv file
 
-    Simulator sim;
-    try {
+    Simulator sim; // Creating a simulator object
+    try { // Exceptions possible 
         sim = Simulator(readPath);
     }
     catch (const char* e) {
@@ -28,32 +28,32 @@ int main() {
         return -1;
     }
 
-    std::string inp1, inp2;
-    do {
+    std::string inp1, inp2; // Allocating mememory for input arguments
+    do { // Drone with or without cargo
         std::cout << "Drone with cargo: Y/N" << "\n";
         std::cin >> inp1;
-    } while (!(inp1 == "Y" || inp1 == "N"));
+    } while (!(inp1 == "Y" || inp1 == "N")); // Only "Y" <yes> or "N" <no> inputs are possible
 
-    do {
+    do { // Choosing a simulator
         std::cout << "Simulator: Euler/RungeKutta" << "\n";
         std::cin >> inp2;
-    } while (!(inp2 == "Euler" || inp2 == "RungeKutta"));
+    } while (!(inp2 == "Euler" || inp2 == "RungeKutta")); // Only "Euler" or "RungeKutta" inputs are possible
 
-    const int windowWidth = 800;
+    const int windowWidth = 800; 
     const int windowHeight = 600;
-    const char* droneBitmapPath = "/home/vlad/Documents/Projects/Drone.bmp";
-    const char* cargoBitmapPath = "/home/vlad/Documents/Projects/Cargo.bmp";
+    const char* droneBitmapPath = "/home/vlad/Documents/Projects/Drone.bmp"; // Path for drone image
+    const char* cargoBitmapPath = "/home/vlad/Documents/Projects/Cargo.bmp"; // Path for cargo image
 
-    std::unique_ptr<State> state;
-    std::unique_ptr<Graphics> g;
-    float h;
+    std::unique_ptr<State> state; // Declaring a state object
+    std::unique_ptr<Graphics> g; // Declaring a graphics object
+    float h; // Time step
 
-    try {
-        if (inp1 == "N") {
+    try { // Exceptions possible 
+        if (inp1 == "N") { // Only drone, no cargo
             state = std::make_unique<DroneState>();
             g = std::make_unique<DroneGraphics>(windowWidth, windowHeight, droneBitmapPath);
         }
-        else {
+        else { // Drone with cargo
             state = std::make_unique<DroneCargoState>();
             g = std::make_unique<DroneCargoGraphics>(windowWidth, windowHeight, droneBitmapPath, cargoBitmapPath);
         }
@@ -62,8 +62,11 @@ int main() {
         std::cout << "Could create graphics object: " << e << "\n";
         return -1;
     }
+	
+	void (Simulator:: * nextStateFunc) (const std::unique_ptr<State>&, float, float); // Function pointer for computing the next state
    
-    if (inp2 == "Euler") {
+    if (inp2 == "Euler") { // Choosing the appropriate time step
+		nextStateFunc = &Simulator::euler;
         if (inp1 == "N") {
             h = 0.01f;
         }
@@ -72,29 +75,25 @@ int main() {
         }
     }
     else {
+		nextStateFunc = &Simulator::rungeKutta;
         h = 0.01f;
     }
     
-    const int fps = 20; 
+    const int fps = 20; // Frames per second
     int timeout = SDL_GetTicks() + 1000 / fps;
     float t = 0.0f;
 
-    SDL_Event e;
+    SDL_Event e; // Memory for storing the event
     bool quit = false;
     while (!quit) {
-        g->draw(state);
-        if (inp2 == "Euler") {
-            sim.euler(state, t, h);
-        }
-        else {
-            sim.rungeKutta(state, t, h);
-        }
+        g->draw(state); // Draw the state
+        (sim.*nextStateFunc)(state, t, h); // Compute the next state
         
-        t += h;
+        t += h; // Increment the time
 
-        while (!SDL_TICKS_PASSED(SDL_GetTicks(), timeout)) {
-            while (SDL_PollEvent(&e)) {
-                if (e.type == SDL_QUIT) {
+        while (!SDL_TICKS_PASSED(SDL_GetTicks(), timeout)) { // Wait for the time elapse
+            while (SDL_PollEvent(&e)) { // Check for any events
+                if (e.type == SDL_QUIT) { // If quit is pressed
                     quit = true;
                 }
             }

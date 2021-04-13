@@ -8,13 +8,13 @@
 
 class Simulator {
 private:
-	FileReader reader;
+	FileReader reader; // File reader
 
 public:
-	Simulator(void);
-	Simulator(const std::string& readPath);
-	void euler(const std::unique_ptr<State>& state, float t, float h);
-	void rungeKutta(const std::unique_ptr<State>& state, float t, float h);
+	Simulator(void); // Default constructor
+	Simulator(const std::string& readPath); // Constructor
+	void euler(const std::unique_ptr<State>& state, float t, float h); // Euler method
+	void rungeKutta(const std::unique_ptr<State>& state, float t, float h); // Runge Kutta method
 };
 
 #endif

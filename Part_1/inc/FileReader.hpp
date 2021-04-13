@@ -7,15 +7,15 @@
 #include <sstream>
 #include <map>
 
-class FileReader {
+class FileReader { 
 private:
-    std::map<float, std::vector<float>> csv;
-    std::map<float, std::vector<float>> read(std::string path);
+    std::map<float, std::vector<float>> csv; // Declaring a variable that stores csv file valued
+    std::map<float, std::vector<float>> read(std::string path); // Reading a csv file
     
 public:
-    FileReader(void);
-    FileReader(std::string path);
-    std::vector<float> get(float t);
+    FileReader(void); // Default contructor
+    FileReader(std::string path); // Constructor
+    std::vector<float> get(float t) const; // Getting a vector of values from the csv variable given the time entry
 };
 
 #endif

@@ -24,6 +24,7 @@
 // Check if we need to rotate the cargo (change the angle accoding to the rope angle) - or it is done in the bonus question?
 // Increare the rope size
 // Mutex object not in scope -> fix this
+// C++
 
 std::mutex mtx;
 bool quit = false;

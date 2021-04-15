@@ -15,8 +15,8 @@ DroneState::DroneState(float x, float y, float theta, float xDot, float yDot) : 
 }
 
 DroneCargoState::DroneCargoState(void) { // Derived class default contructor
-	keys = { "xD", "yD", "thetaD", "xDotD", "yDotD", "xC", "yC", "xDotC", "yDotC", "lRope", "lDotRope" }; // State vector names
-	vec = { {"xD", 0}, {"yD", droneDefaultHeight}, {"thetaD", 0}, {"xDotD", 0}, {"yDotD", 0}, {"xC", 0}, {"yC", droneDefaultHeight - lZeroRope}, {"xDotC", 0}, {"yDotC", 0}, {"lRope", 0}, {"lDotRope", 0} }; // Intializing the state vector
+	keys = { "xD", "yD", "thetaD", "xDotD", "yDotD", "xC", "yC", "xDotC", "yDotC", "lRope", "lDotRope", "thetaRope" }; // State vector names
+	vec = { {"xD", 0}, {"yD", droneDefaultHeight}, {"thetaD", 0}, {"xDotD", 0}, {"yDotD", 0}, {"xC", 0}, {"yC", droneDefaultHeight - lZeroRope}, {"xDotC", 0}, {"yDotC", 0}, {"lRope", 0}, {"lDotRope", 0}, {"thetaRope", 0} }; // Intializing the state vector
 }
 
 DroneCargoState::DroneCargoState(float xD, float yD, float thetaD, float xDotD, float yDotD, float xC, float yC, float xDotC, float yDotC) : State() { // Derived class contructor
@@ -25,7 +25,7 @@ DroneCargoState::DroneCargoState(float xD, float yD, float thetaD, float xDotD, 
 	}
 
 	keys = { "xD", "yD", "thetaD", "xDotD", "yDotD", "xC", "yC", "xDotC", "yDotC", "lRope", "lDotRope" }; // State vector names
-	vec = { {"xD", xD}, {"yD", yD}, {"thetaD", thetaD}, {"xDotD", xDotD}, {"yDotD", yDotD}, {"xC", xC}, {"yC", yC}, {"xDotC", xDotC}, {"yDotC", yDotC}, {"lRope", 0}, {"lDotRope", 0} }; // Intializing the state vector
+	vec = { {"xD", xD}, {"yD", yD}, {"thetaD", thetaD}, {"xDotD", xDotD}, {"yDotD", yDotD}, {"xC", xC}, {"yC", yC}, {"xDotC", xDotC}, {"yDotC", yDotC}, {"lRope", 0}, {"lDotRope", 0}, {"thetaRope", 0} }; // Intializing the state vector
 }
 
 State::svec State::getState(void) const { // State vector getter
@@ -103,7 +103,8 @@ State::svec DroneCargoState::f(const svec& v, const std::vector<float>& u) { // 
 
 	float lRope = sqrtf(powf(v.at("xD") - v.at("xC"), 2) + powf(v.at("yD") - v.at("yC"), 2)); // Rope length calculation
 	float lDotRope = ((v.at("xD") - v.at("xC")) * (v.at("xDotD") - v.at("xDotC")) + (v.at("yD") - v.at("yC")) * (v.at("yDotD") - v.at("yDotC"))) / lRope; // Derivative of rope length calculation
-
+	float thetaRope = atan2f(v.at("xC") - v.at("xD"), v.at("yD") - v.at("yC")); // Rope angle calculation
+	
 	float fStarRope = kRope * (lRope - lZeroRope) + dRope * lDotRope; // Temp computation for rope force
 	float fRope = std::max(fStarRope, 0.0f); // Rope force computation
 	float fRopeX = (fRope * (v.at("xD") - v.at("xC"))) / lRope; // Rope force in X-direction
@@ -126,7 +127,8 @@ State::svec DroneCargoState::f(const svec& v, const std::vector<float>& u) { // 
 		{"xDotC", (1 / mC) * (-dragCargo * v.at("xDotC") + fRopeX)},
 		{"yDotC", (1 / mC) * (-dragCargo * v.at("yDotC") + fRopeY) - g},
 		{"lRope", lRope},
-		{"lDotRope", lDotRope}
+		{"lDotRope", lDotRope},
+		{"thetaRope", thetaRope}
 	};
 }
 
@@ -135,5 +137,5 @@ void DroneState::reset(void) { // Reseting the Drone state
 }
 
 void DroneCargoState::reset(void) { // Reseting the Drone with Cargo state
-	vec = { {"xD", 0}, {"yD", droneDefaultHeight}, {"thetaD", 0}, {"xDotD", 0}, {"yDotD", 0}, {"xC", 0}, {"yC", droneDefaultHeight - lZeroRope}, {"xDotC", 0}, {"yDotC", 0}, {"lRope", 0}, {"lDotRope", 0} };
+	vec = { {"xD", 0}, {"yD", droneDefaultHeight}, {"thetaD", 0}, {"xDotD", 0}, {"yDotD", 0}, {"xC", 0}, {"yC", droneDefaultHeight - lZeroRope}, {"xDotC", 0}, {"yDotC", 0}, {"lRope", 0}, {"lDotRope", 0}, {"thetaRope", 0} };
 }

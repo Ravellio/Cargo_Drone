@@ -75,7 +75,7 @@ void State::print(const svec& v) { // Print the state vector on the screen
 	}
 	std::cout << "\n";
 	for (auto key : keys) {
-		std::cout << v.at(key) << " "; // The print the values
+		std::cout << v.at(key) << " "; // Then print the values
 	}
 	std::cout << "\n";
 }

@@ -31,7 +31,7 @@ std::vector<float> u = { 0.0f, 0.0f }; // Input vector
 // Next state computation function : thread function
 void nextStateSimulation(Simulator sim, void (Simulator::* f) (const std::unique_ptr<State>&, const std::vector<float>&, float h), int sleepTimeMs, float h) {
     while (!quit) { 
-		{ // We need to scope the guard object. 
+		{ // We need to scope the guard object. It is required to create an extra scope
 			std::lock_guard<std::mutex> guard(mtx); // Guard is a convenient way to engage and dis-engage the lock
 			(sim.*f)(state, u, h); // Compute the next state using a function pointer
 		}

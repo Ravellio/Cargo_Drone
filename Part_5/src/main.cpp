@@ -105,7 +105,7 @@ int main() {
     }
     
     const int fps = 30; // Frames per second
-    const int threadSleepTimeMs = 15; // Computational thread sleep time
+    const int threadSleepTimeMs = 20; // Computational thread sleep time
     int timeout = SDL_GetTicks() + 1000 / fps;
 
     std::thread th(nextStateSimulation, sim, nextStateFunc, threadSleepTimeMs, h); // Initializing the thread

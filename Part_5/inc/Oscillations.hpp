@@ -2,14 +2,18 @@
 #define OSCILLATIONS_HPP
 
 #include <vector>
+#include <complex>
+#include <valarray>
 
 class Oscillations {
 private:
-	int windowSize;
-	
+		
 public:
-	Oscillations(int windowSize);
-	void fft(const std::vector<float>& buff);
+	typedef std::complex<double> Complex;
+	typedef std::valarray<Complex> CArray;
+
+	Oscillations(void);
+	void fft(CArray& buff);
 };
 
 #endif

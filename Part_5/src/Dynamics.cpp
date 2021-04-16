@@ -115,6 +115,8 @@ State::svec DroneCargoState::f(const svec& v, const std::vector<float>& u) { // 
 	if (!((v.at("thetaD") <= thetaMin && u[1] < 0) || (v.at("thetaD") >= thetaMax && u[1] > 0))) { // Check if drone angle does not exceed limits
 		thetaDot = u[1];
 	}
+	
+	lZeroRope += u[2];
 
 	return { // Return the state vector according to the Drone with Cargo dynamics
 		{"xD", v.at("xDotD")},

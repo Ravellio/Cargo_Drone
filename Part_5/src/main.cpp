@@ -9,7 +9,8 @@
 *              Note that integration step "h" is chosen automatically depending on the integration method.
 *              The program is processing user key for drone movement. Key "w" correspons to up (enable trust),
 *              "s" - going down (disable trust), "a" - left and "d" right. No writing or reading to "csv" file is performed.
-* 			   In the program multithreading is used.
+* 			   In the program multithreading is used. In this program it is also possible to change the length of the rope.
+* 			   By pressing "up key" 
 */
 
 #include <thread>
@@ -19,14 +20,13 @@
 
 #include "inc/Simulator.hpp"
 #include "inc/Graphics.hpp"
-
-// Mutex object not in scope -> fix this
+#include "inc/Oscillations.hpp"
 
 std::mutex mtx; // Mutex object
 bool quit = false; // Flag for quiting the game
 
 std::unique_ptr<State> state; // Dynamic state
-std::vector<float> u = { 0.0f, 0.0f }; // Input vector
+std::vector<float> u = { 0.0f, 0.0f, 0.0f }; // Input vector
 
 // Next state computation function : thread function
 void nextStateSimulation(Simulator sim, void (Simulator::* f) (const std::unique_ptr<State>&, const std::vector<float>&, float h), int sleepTimeMs, float h) {
@@ -34,6 +34,7 @@ void nextStateSimulation(Simulator sim, void (Simulator::* f) (const std::unique
 		{ // We need to scope the guard object. It is required to create an extra scope
 			std::lock_guard<std::mutex> guard(mtx); // Guard is a convenient way to engage and dis-engage the lock
 			(sim.*f)(state, u, h); // Compute the next state using a function pointer
+			u[2] = 0.0f; // Set the rope change value to zero
 		}
         std::this_thread::sleep_for(std::chrono::milliseconds(sleepTimeMs)); // Sleep
     }
@@ -61,6 +62,7 @@ int main() {
     std::unique_ptr<Graphics> g; // Declaring a graphics object
     const float w = 0.7f; // Max rotation angle 
     const float downT = 0.0f; // Disabled thrust value
+	const float ropeLengthChange = 0.01f; // Rope change length
     float upT; // Enabled trust
     float h; // Time step
    
@@ -103,16 +105,16 @@ int main() {
     }
     
     const int fps = 30; // Frames per second
-    const int threadSleepTimeMs = 20; // Computational thread sleep time
+    const int threadSleepTimeMs = 15; // Computational thread sleep time
     int timeout = SDL_GetTicks() + 1000 / fps;
 
     std::thread th(nextStateSimulation, sim, nextStateFunc, threadSleepTimeMs, h); // Initializing the thread
     
     SDL_Event e; // Memory for storing the event
-
+	
     while (!quit) {
         g->draw(state); // Draw the state
-  
+		
         while (!SDL_TICKS_PASSED(SDL_GetTicks(), timeout)) { // Wait for the time elapse
             while (SDL_PollEvent(&e)) { // Check for any events
                 switch (e.type) { // Check the event type
@@ -133,7 +135,13 @@ int main() {
                             break;
                         case SDLK_s: // 's'
                             u[0] = downT; // Disable thrust
+							break;
+						case SDLK_DOWN: // Down arrow
+							u[2] = -ropeLengthChange; // Wind rope (make it shorter)
+							break;
                         default:
+						case SDLK_UP: // Up arrow
+							u[2]= ropeLengthChange; // Release rope (make it longer)
                             break;
                     }           
                 default:

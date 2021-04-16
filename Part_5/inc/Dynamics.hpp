@@ -57,7 +57,6 @@ private:
 	const float mC = 2.0f; // Cargo mass
 	const float cDragDrone = 0.1f; // Drone drag constant
 	const float cDragCargo = 0.1f; // Cargo drag constant
-	const float lZeroRope = 1.5f; // Rope length
 	const float kRope = 40000.0f; // Rope stiffness 
 	const float dRope = 50.0f; // Rope damping
 
@@ -65,6 +64,8 @@ private:
 	const float thetaMax = 0.5f; // Maximum drone rotation angle
 
 	const float droneDefaultHeight = 2.0f; // Drone default height
+	
+	float lZeroRope = 1.5f; // Rope length
 
 public:
 	DroneCargoState(void); // Default contructor
